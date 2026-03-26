@@ -11,6 +11,8 @@ COPY . /srv/shiny-server/
 
 RUN mkdir -p /srv/shiny-server/data
 
+COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
+
 EXPOSE 3838
 
 CMD ["/usr/bin/shiny-server"]
