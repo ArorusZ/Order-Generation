@@ -17,6 +17,9 @@ server {\n\
   }\n\
 }' > /etc/shiny-server/shiny-server.conf
 
+RUN rm -f /srv/shiny-server/index.html
+RUN rm -rf /srv/shiny-server/sample-apps
+
 COPY . /srv/shiny-server/
 
 RUN mkdir -p /srv/shiny-server/data
