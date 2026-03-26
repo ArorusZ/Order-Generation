@@ -11,14 +11,12 @@ RUN echo 'run_as shiny;\n\
 server {\n\
   listen 3838;\n\
   location / {\n\
-    site_dir /srv/shiny-server;\n\
+    app_dir /srv/shiny-server;\n\
     log_dir /var/log/shiny-server;\n\
-    directory_index on;\n\
   }\n\
 }' > /etc/shiny-server/shiny-server.conf
 
-RUN rm -f /srv/shiny-server/index.html
-RUN rm -rf /srv/shiny-server/sample-apps
+RUN rm -rf /srv/shiny-server/*
 
 COPY . /srv/shiny-server/
 
