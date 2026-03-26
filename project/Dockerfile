@@ -7,7 +7,15 @@ RUN apt-get update && apt-get install -y \
 
 RUN R -e "install.packages(c('shiny', 'later'), repos='https://cran.rstudio.com/')"
 
-COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
+RUN echo 'run_as shiny;\n\
+server {\n\
+  listen 3838;\n\
+  location / {\n\
+    site_dir /srv/shiny-server;\n\
+    log_dir /var/log/shiny-server;\n\
+    directory_index on;\n\
+  }\n\
+}' > /etc/shiny-server/shiny-server.conf
 
 COPY . /srv/shiny-server/
 
