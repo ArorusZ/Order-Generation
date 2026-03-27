@@ -60,12 +60,6 @@ modelPortfolioServer <- function(id, shared) {
     count <- reactiveVal(0)
     active_rows <- reactiveVal(integer(0))
     
-    saved_portfolio <- NULL
-
-    # REPLACE LOAD WITH
-    source("functions/db_handler.R")
-    saved_data <- load_portfolio()
-    
     # 🔥 SAFE NUMERIC HELPER
     safe_numeric <- function(x) {
       if (is.null(x) || x == "") return(0)
