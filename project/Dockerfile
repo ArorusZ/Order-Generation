@@ -11,6 +11,7 @@ RUN Rscript -e "install.packages('dplyr', repos='https://cran.rstudio.com/', dep
 RUN Rscript -e "install.packages('DT', repos='https://cran.rstudio.com/', dependencies=TRUE)"
 RUN Rscript -e "install.packages('DBI', repos='https://cran.rstudio.com/', dependencies=TRUE)"
 RUN Rscript -e "install.packages('RPostgres', repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN Rscript -e "install.packages('cookies', repos='https://cran.rstudio.com/', dependencies=TRUE)"
 
 RUN rm -rf /srv/shiny-server/*
 
