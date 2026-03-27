@@ -10,36 +10,43 @@ ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "Style.css"),
     tags$script(HTML("
-      function generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0;
-          var v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      }
+  function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0;
+      var v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
 
-      function getOrCreateDeviceID() {
-        var name = 'device_id=';
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-          var c = cookies[i].trim();
-          if (c.indexOf(name) === 0) {
-            return c.substring(name.length, c.length);
-          }
-        }
-        // Not found — create new one
-        var newID = generateUUID();
-        var expires = new Date();
-        expires.setFullYear(expires.getFullYear() + 10);
-        document.cookie = name + newID + '; expires=' + expires.toUTCString() + '; path=/';
-        return newID;
+  function getOrCreateDeviceID() {
+    var name = 'device_id=';
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var c = cookies[i].trim();
+      if (c.indexOf(name) === 0) {
+        return c.substring(name.length, c.length);
       }
+    }
+    var newID = generateUUID();
+    var expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 10);
+    document.cookie = name + newID + '; expires=' + expires.toUTCString() + '; path=/';
+    return newID;
+  }
 
-      $(document).ready(function() {
-        var deviceID = getOrCreateDeviceID();
-        Shiny.setInputValue('device_id', deviceID, {priority: 'event'});
-      });
-    "))
+  // Try multiple events to make sure it fires
+  function sendDeviceID() {
+    var deviceID = getOrCreateDeviceID();
+    console.log('Device ID:', deviceID);
+    if (typeof Shiny !== 'undefined' && Shiny.setInputValue) {
+      Shiny.setInputValue('device_id', deviceID, {priority: 'event'});
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', sendDeviceID);
+  $(document).on('shiny:connected', sendDeviceID);
+  setTimeout(sendDeviceID, 2000);
+"))
   ),
   tabsetPanel(
     tabPanel("Scrip Master", scripMasterUI("sm1")),
