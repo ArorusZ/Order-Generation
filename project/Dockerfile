@@ -10,12 +10,10 @@ RUN rm -rf /srv/shiny-server/*
 
 COPY . /srv/shiny-server/
 
-RUN ls -la /srv/shiny-server/
+WORKDIR /srv/shiny-server/project
 
-WORKDIR /srv/shiny-server
-
-RUN mkdir -p /srv/shiny-server/data
+RUN mkdir -p /srv/shiny-server/project/data
 
 EXPOSE 3838
 
-CMD ["Rscript", "-e", "shiny::runApp('/srv/shiny-server', host='0.0.0.0', port=3838)"]
+CMD ["Rscript", "-e", "shiny::runApp('/srv/shiny-server/project', host='0.0.0.0', port=3838)"]
