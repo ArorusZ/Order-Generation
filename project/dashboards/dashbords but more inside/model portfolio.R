@@ -132,7 +132,9 @@ modelPortfolioServer <- function(id, shared) {
     
     loaded <- reactiveVal(FALSE)
     
-    observe({
+    observeEvent(shared$device_id, {
+      saved_portfolio <- load_portfolio(shared$device_id)
+      
       if (is.null(saved_portfolio)) return()
       req(securities())
       if (loaded()) return()
@@ -152,7 +154,7 @@ modelPortfolioServer <- function(id, shared) {
       }
       
       loaded(TRUE)
-    })
+    }, once = TRUE)
     
     # 🔥 ADD BUTTON
     observeEvent(input$add, {
