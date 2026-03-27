@@ -31,6 +31,13 @@ get_con <- function() {
   )
 }
 
+# Save scrip master data
+save_scrip <- function(df) {
+  con <- get_con()
+  dbWriteTable(con, "scrip_master", df, overwrite = TRUE)
+  dbDisconnect(con)
+}
+
 load_scrip <- function() {
   tryCatch({
     con <- get_con()
@@ -47,6 +54,13 @@ load_scrip <- function() {
   })
 }
 
+# Save order generation data
+save_ogw <- function(df) {
+  con <- get_con()
+  dbWriteTable(con, "ogw", df, overwrite = TRUE)
+  dbDisconnect(con)
+}
+
 load_ogw <- function() {
   tryCatch({
     con <- get_con()
@@ -61,6 +75,13 @@ load_ogw <- function() {
     message("DB load error: ", e$message)
     return(NULL)
   })
+}
+
+# Save model portfolio data
+save_portfolio <- function(df) {
+  con <- get_con()
+  dbWriteTable(con, "portfolio", df, overwrite = TRUE)
+  dbDisconnect(con)
 }
 
 load_portfolio <- function() {
