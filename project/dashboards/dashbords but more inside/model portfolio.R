@@ -224,7 +224,7 @@ modelPortfolioServer <- function(id, shared) {
       df_final <- live_portfolio()
       
       if (!is.null(df_final)) {
-        save_portfolio(df_final)
+        save_portfolio(df_final, shared$device_id)
         showNotification("Portfolio saved!", type = "message")
       } else {
         showNotification("Nothing to save!", type = "warning")
