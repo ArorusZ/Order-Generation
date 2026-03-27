@@ -55,6 +55,12 @@ server <- function(input, output, session) {
     portfolio = NULL,
     final = NULL
   )
+
+  # Capture device ID as soon as it arrives from browser
+  observeEvent(input$device_id, {
+    shared$device_id <- input$device_id
+    message("Device ID: ", input$device_id)
+  })
   
   scripMasterServer("sm1", shared)
   modelPortfolioServer("mp1", shared)
