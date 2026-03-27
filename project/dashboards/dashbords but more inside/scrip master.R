@@ -77,33 +77,31 @@ scripMasterServer <- function(id, shared) {
     
     loaded <- reactiveVal(FALSE)
     
-    observe({
+    observeEvent(shared$device_id, {
+      saved_data <- load_scrip(shared$device_id)
+  
       if (is.null(saved_data)) return()
-      if (loaded()) return()
-      
+  
       n <- nrow(saved_data)
-      
       count(n)
       active_rows(seq_len(n))
-      
-      # 🔹 Step 1: create rows
+  
       for (i in seq_len(n)) {
         add_row(i)
       }
-      
-      # 🔹 Step 2: delay updates (CRITICAL FIX)
+  
       later::later(function() {
         for (i in seq_len(n)) {
-          updateTextInput(session, paste0("isin", i), value = saved_data$ISIN[i])
+          updateTextInput(session, paste0("isin", i),     value = saved_data$ISIN[i])
           updateTextInput(session, paste0("security", i), value = saved_data$Security[i])
-          updateTextInput(session, paste0("short", i), value = saved_data$Shortname[i])
-          updateTextInput(session, paste0("sector", i), value = saved_data$Sector[i])
-          updateTextInput(session, paste0("mcap", i), value = saved_data$Mcap[i])
+          updateTextInput(session, paste0("short", i),    value = saved_data$Shortname[i])
+          updateTextInput(session, paste0("sector", i),   value = saved_data$Sector[i])
+          updateTextInput(session, paste0("mcap", i),     value = saved_data$Mcap[i])
         }
       }, delay = 0.1)
-      
-      loaded(TRUE)
-    })
+  
+  loaded(TRUE)
+}, once = TRUE)
     
     # ADD BUTTON
     observeEvent(input$add, {
