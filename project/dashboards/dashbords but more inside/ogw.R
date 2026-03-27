@@ -78,9 +78,8 @@ portfolioServer <- function(id, shared) {
     
     # LOAD
     saved_calc <- NULL
-    if (file.exists("data/ogw.rds")) {
-      saved_calc <- readRDS("data/ogw.rds")
-    }
+    source("functions/db_handler.R")
+    saved_calc <- load_ogw()
     
     saved_lookup <- function(sec) {
       if (is.null(saved_calc)) return(NULL)
@@ -286,7 +285,7 @@ portfolioServer <- function(id, shared) {
     })
     
     observeEvent(input$save, {
-      saveRDS(updated_df(), "data/ogw.rds")
+      save_ogw(updated_df())
       showNotification("Portfolio saved!", type = "message")
     })
     

@@ -62,9 +62,9 @@ modelPortfolioServer <- function(id, shared) {
     
     saved_portfolio <- NULL
 
-    if (file.exists("data/portfolio.rds")) {
-      saved_portfolio <- readRDS("data/portfolio.rds")
-    }
+    # REPLACE LOAD WITH
+    source("functions/db_handler.R")
+    saved_data <- load_portfolio()
     
     # 🔥 SAFE NUMERIC HELPER
     safe_numeric <- function(x) {
@@ -228,7 +228,7 @@ modelPortfolioServer <- function(id, shared) {
       df_final <- live_portfolio()
       
       if (!is.null(df_final)) {
-        saveRDS(df_final, "data/portfolio.rds")
+        save_portfolio(df)
         showNotification("Portfolio saved!", type = "message")
       } else {
         showNotification("Nothing to save!", type = "warning")

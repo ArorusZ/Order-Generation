@@ -44,9 +44,9 @@ scripMasterServer <- function(id, shared) {
     count <- reactiveVal(0)
     active_rows <- reactiveVal(integer(0))
     
-    if (file.exists("data/data.rds")) {
-      saved_data <- readRDS("data/data.rds")
-    }
+    # REPLACE WITH
+    source("functions/db_handler.R")
+    saved_data <- load_scrip()
     
     # 🔥 ADD ROW FUNCTION
     add_row <- function(i) {
@@ -139,7 +139,7 @@ scripMasterServer <- function(id, shared) {
       df <- live_data()
       
       if (!is.null(df)) {
-        saveRDS(df, "data/data.rds")
+        save_scrip(df)
         showNotification("Data saved!", type = "message")
       } else {
         showNotification("No data!", type = "error")
