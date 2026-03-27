@@ -1,24 +1,18 @@
 library(RPostgres)
 library(DBI)
 
-# Connect to database
 get_con <- function() {
   url <- Sys.getenv("DATABASE_URL")
   url <- gsub("^postgres(ql)?://", "", url)
   
-  # Split user:password from the rest
   user_pass <- sub("@.*", "", url)
   host_rest <- sub(".*@", "", url)
   
   user     <- sub(":.*", "", user_pass)
   password <- sub(".*:", "", user_pass)
-  
-  # Host may or may not have a port
-  host   <- sub("[:/].*", "", host_rest)
-  dbname <- sub(".*/", "", host_rest)
-  port   <- if (grepl(":", host_rest)) as.integer(sub(".*:(\\d+)/.*", "\\1", host_rest)) else 5432L
-  
-  message("Parsed - user: ", user, " host: ", host, " port: ", port, " db: ", dbname)
+  host     <- sub("[:/].*", "", host_rest)
+  dbname   <- sub(".*/", "", host_rest)
+  port     <- if (grepl(":", host_rest)) as.integer(sub(".*:(\\d+)/.*", "\\1", host_rest)) else 5432L
   
   dbConnect(
     RPostgres::Postgres(),
@@ -31,71 +25,80 @@ get_con <- function() {
   )
 }
 
-# Save scrip master data
-save_scrip <- function(df) {
-  con <- get_con()
-  dbWriteTable(con, "scrip_master", df, overwrite = TRUE)
-  dbDisconnect(con)
+# SCRIP MASTER
+save_scrip <- function(df, device_id) {
+  tryCatch({
+    con <- get_con()
+    df$device_id <- device_id
+    dbWriteTable(con, "scrip_master", df[df$device_id == device_id, ],
+                 overwrite = FALSE, append = TRUE)
+    # Delete old rows for this device first
+    dbExecute(con, "DELETE FROM scrip_master WHERE device_id = $1", list(device_id))
+    dbWriteTable(con, "scrip_master", df, overwrite = FALSE, append = TRUE)
+    dbDisconnect(con)
+  }, error = function(e) message("Save error: ", e$message))
 }
 
-load_scrip <- function() {
+load_scrip <- function(device_id) {
   tryCatch({
     con <- get_con()
     if (dbExistsTable(con, "scrip_master")) {
-      df <- dbReadTable(con, "scrip_master")
+      df <- dbGetQuery(con, "SELECT * FROM scrip_master WHERE device_id = $1", list(device_id))
       dbDisconnect(con)
-      return(df)
+      df$device_id <- NULL
+      return(if (nrow(df) == 0) NULL else df)
     }
     dbDisconnect(con)
     return(NULL)
-  }, error = function(e) {
-    message("DB load error: ", e$message)
-    return(NULL)
-  })
+  }, error = function(e) { message("Load error: ", e$message); NULL })
 }
 
-# Save order generation data
-save_ogw <- function(df) {
-  con <- get_con()
-  dbWriteTable(con, "ogw", df, overwrite = TRUE)
-  dbDisconnect(con)
+# ORDER GENERATION
+save_ogw <- function(df, device_id) {
+  tryCatch({
+    con <- get_con()
+    df$device_id <- device_id
+    dbExecute(con, "DELETE FROM ogw WHERE device_id = $1", list(device_id))
+    dbWriteTable(con, "ogw", df, overwrite = FALSE, append = TRUE)
+    dbDisconnect(con)
+  }, error = function(e) message("Save error: ", e$message))
 }
 
-load_ogw <- function() {
+load_ogw <- function(device_id) {
   tryCatch({
     con <- get_con()
     if (dbExistsTable(con, "ogw")) {
-      df <- dbReadTable(con, "ogw")
+      df <- dbGetQuery(con, "SELECT * FROM ogw WHERE device_id = $1", list(device_id))
       dbDisconnect(con)
-      return(df)
+      df$device_id <- NULL
+      return(if (nrow(df) == 0) NULL else df)
     }
     dbDisconnect(con)
     return(NULL)
-  }, error = function(e) {
-    message("DB load error: ", e$message)
-    return(NULL)
-  })
+  }, error = function(e) { message("Load error: ", e$message); NULL })
 }
 
-# Save model portfolio data
-save_portfolio <- function(df) {
-  con <- get_con()
-  dbWriteTable(con, "portfolio", df, overwrite = TRUE)
-  dbDisconnect(con)
+# MODEL PORTFOLIO
+save_portfolio <- function(df, device_id) {
+  tryCatch({
+    con <- get_con()
+    df$device_id <- device_id
+    dbExecute(con, "DELETE FROM portfolio WHERE device_id = $1", list(device_id))
+    dbWriteTable(con, "portfolio", df, overwrite = FALSE, append = TRUE)
+    dbDisconnect(con)
+  }, error = function(e) message("Save error: ", e$message))
 }
 
-load_portfolio <- function() {
+load_portfolio <- function(device_id) {
   tryCatch({
     con <- get_con()
     if (dbExistsTable(con, "portfolio")) {
-      df <- dbReadTable(con, "portfolio")
+      df <- dbGetQuery(con, "SELECT * FROM portfolio WHERE device_id = $1", list(device_id))
       dbDisconnect(con)
-      return(df)
+      df$device_id <- NULL
+      return(if (nrow(df) == 0) NULL else df)
     }
     dbDisconnect(con)
     return(NULL)
-  }, error = function(e) {
-    message("DB load error: ", e$message)
-    return(NULL)
-  })
+  }, error = function(e) { message("Load error: ", e$message); NULL })
 }
