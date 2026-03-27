@@ -2,70 +2,79 @@ library(RPostgres)
 library(DBI)
 
 # Connect to database
+library(RPostgres)
+library(DBI)
+
 get_con <- function() {
+  url <- Sys.getenv("DATABASE_URL")
+  
+  # Parse the URL manually
+  # Format: postgresql://user:password@host:port/dbname
+  url <- sub("postgresql://", "", url)
+  user     <- sub(":.*", "", url)
+  url      <- sub(".*:", "", url)
+  password <- sub("@.*", "", url)
+  url      <- sub(".*@", "", url)
+  host     <- sub(":.*", "", url)
+  url      <- sub(".*:", "", url)
+  port     <- as.integer(sub("/.*", "", url))
+  dbname   <- sub(".*/", "", url)
+  
   dbConnect(
     RPostgres::Postgres(),
-    dbname   = Sys.getenv("PGDATABASE"),
-    host     = Sys.getenv("PGHOST"),
-    port     = Sys.getenv("PGPORT"),
-    user     = Sys.getenv("PGUSER"),
-    password = Sys.getenv("PGPASSWORD")
+    dbname   = dbname,
+    host     = host,
+    port     = port,
+    user     = user,
+    password = password,
+    sslmode  = "require"
   )
 }
 
-# Save scrip master data
-save_scrip <- function(df) {
-  con <- get_con()
-  dbWriteTable(con, "scrip_master", df, overwrite = TRUE)
-  dbDisconnect(con)
-}
-
-# Load scrip master data
 load_scrip <- function() {
-  con <- get_con()
-  if (dbExistsTable(con, "scrip_master")) {
-    df <- dbReadTable(con, "scrip_master")
+  tryCatch({
+    con <- get_con()
+    if (dbExistsTable(con, "scrip_master")) {
+      df <- dbReadTable(con, "scrip_master")
+      dbDisconnect(con)
+      return(df)
+    }
     dbDisconnect(con)
-    return(df)
-  }
-  dbDisconnect(con)
-  return(NULL)
+    return(NULL)
+  }, error = function(e) {
+    message("DB load error: ", e$message)
+    return(NULL)
+  })
 }
 
-# Save model portfolio data
-save_portfolio <- function(df) {
-  con <- get_con()
-  dbWriteTable(con, "portfolio", df, overwrite = TRUE)
-  dbDisconnect(con)
-}
-
-# Load model portfolio data
-load_portfolio <- function() {
-  con <- get_con()
-  if (dbExistsTable(con, "portfolio")) {
-    df <- dbReadTable(con, "portfolio")
-    dbDisconnect(con)
-    return(df)
-  }
-  dbDisconnect(con)
-  return(NULL)
-}
-
-# Save order generation data
-save_ogw <- function(df) {
-  con <- get_con()
-  dbWriteTable(con, "ogw", df, overwrite = TRUE)
-  dbDisconnect(con)
-}
-
-# Load order generation data
 load_ogw <- function() {
-  con <- get_con()
-  if (dbExistsTable(con, "ogw")) {
-    df <- dbReadTable(con, "ogw")
+  tryCatch({
+    con <- get_con()
+    if (dbExistsTable(con, "ogw")) {
+      df <- dbReadTable(con, "ogw")
+      dbDisconnect(con)
+      return(df)
+    }
     dbDisconnect(con)
-    return(df)
-  }
-  dbDisconnect(con)
-  return(NULL)
+    return(NULL)
+  }, error = function(e) {
+    message("DB load error: ", e$message)
+    return(NULL)
+  })
+}
+
+load_portfolio <- function() {
+  tryCatch({
+    con <- get_con()
+    if (dbExistsTable(con, "portfolio")) {
+      df <- dbReadTable(con, "portfolio")
+      dbDisconnect(con)
+      return(df)
+    }
+    dbDisconnect(con)
+    return(NULL)
+  }, error = function(e) {
+    message("DB load error: ", e$message)
+    return(NULL)
+  })
 }
