@@ -44,10 +44,6 @@ scripMasterServer <- function(id, shared) {
     count <- reactiveVal(0)
     active_rows <- reactiveVal(integer(0))
     
-    # REPLACE WITH
-    source("functions/db_handler.R")
-    saved_data <- load_scrip()
-    
     # 🔥 ADD ROW FUNCTION
     add_row <- function(i) {
       
