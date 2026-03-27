@@ -129,8 +129,16 @@ scripMasterServer <- function(id, shared) {
     
     # SAVE BUTTON (optional persistence)
     observeEvent(input$save, {
-      req(shared$device_id)
+      message("Save clicked")
+      message("device_id: ", shared$device_id)
+  
+      if (is.null(shared$device_id)) {
+        showNotification("Device ID not ready, try again!", type = "error")
+        return()
+      }
+      
       df <- live_data()
+      message("df rows: ", nrow(df))
       
       if (!is.null(df)) {
         save_scrip(live_data(), shared$device_id)
