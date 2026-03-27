@@ -10,6 +10,8 @@ RUN rm -rf /srv/shiny-server/*
 
 COPY . /srv/shiny-server/
 
+RUN ls -la /srv/shiny-server/
+
 WORKDIR /srv/shiny-server
 
 RUN mkdir -p /srv/shiny-server/data
