@@ -107,10 +107,10 @@ portfolioServer <- function(id, shared) {
           sec <- df()$Security[i]
           row_match <- saved_lookup(sec)
           
-          cmp_val <- if (!is.null(row_match)) row_match$cmp else 0
-          holding_val <- if (!is.null(row_match)) row_match$holding else 0
-          qty_val <- if (!is.null(row_match)) row_match$qty else 0
-          perc_val <- if (!is.null(row_match) && "approved_perc" %in% colnames(row_match)) row_match$approved_perc else 0
+          cmp_val <- if (!is.null(row_match)) row_match$cmp else NA
+          holding_val <- if (!is.null(row_match)) row_match$holding else NA
+          qty_val <- if (!is.null(row_match)) row_match$qty else NA
+          perc_val <- if (!is.null(row_match) && "approved_perc" %in% colnames(row_match)) row_match$approved_perc else NA
           
           div(
             class = "flex-row data-row",
@@ -161,7 +161,7 @@ portfolioServer <- function(id, shared) {
                 input$amt)
             
             val <- input[[paste0("holding", idx)]] * input[[paste0("cmp", idx)]]
-            round((val / input$amt) * 100, 2)
+            format(round((val / input$amt) * 100, 2), big.mark = ",", scientific = FALSE)
           })
           
           output[[paste0("dev_qty", idx)]] <- renderText({
@@ -175,7 +175,7 @@ portfolioServer <- function(id, shared) {
             
             if (cmp > 0) {
               target_qty <- (input$amt * alloc) / cmp
-              round(abs(target_qty - holding), 2)
+              format(round(abs(target_qty - holding), 2), big.mark = ",", scientific = FALSE)
             } else 0
           })
           
@@ -191,7 +191,7 @@ portfolioServer <- function(id, shared) {
             if (cmp > 0) {
               target_qty <- (input$amt * alloc) / cmp
               dev_qty <- target_qty - holding
-              round(abs(dev_qty * cmp), 2)
+              format(round(abs(dev_qty * cmp), 2), big.mark = ",", scientific = FALSE)
             } else 0
           })
           
