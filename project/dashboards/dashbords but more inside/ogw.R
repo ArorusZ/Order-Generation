@@ -288,7 +288,8 @@ portfolioServer <- function(id, shared) {
     })
     
     observeEvent(input$save, {
-      save_ogw(updated_df())
+      req(shared$device_id)
+      save_ogw(updated_df(), shared$device_id)
       showNotification("Portfolio saved!", type = "message")
     })
     
