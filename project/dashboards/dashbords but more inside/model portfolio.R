@@ -127,28 +127,25 @@ modelPortfolioServer <- function(id, shared) {
     loaded <- reactiveVal(FALSE)
     
     observeEvent(shared$device_id, {
-      saved_portfolio <- load_portfolio(shared$device_id)
-      
-      if (is.null(saved_portfolio)) return()
-      req(securities())
-      if (loaded()) return()
-      
-      n <- nrow(saved_portfolio)
-      
-      count(n)
-      active_rows(seq_len(n))
-      
-      for (i in seq_len(n)) {
-        
-        sec <- saved_portfolio$Security[i]
-        alloc <- round(saved_portfolio$allocation[i] * 100, 2)
-        
-        # ✅ PASS VALUES DIRECTLY
-        add_row(i, sec_val = sec, alloc_val = alloc)
-      }
-      
-      loaded(TRUE)
-    }, once = TRUE)
+  later::later(function() {
+    saved_portfolio <- load_portfolio(shared$device_id)
+    
+    if (is.null(saved_portfolio)) return()
+    if (loaded()) return()
+    
+    n <- nrow(saved_portfolio)
+    count(n)
+    active_rows(seq_len(n))
+    
+    for (i in seq_len(n)) {
+      sec   <- saved_portfolio$Security[i]
+      alloc <- round(saved_portfolio$allocation[i] * 100, 2)
+      add_row(i, sec_val = sec, alloc_val = alloc)
+    }
+    
+    loaded(TRUE)
+  }, delay = 0.5)
+}, once = TRUE)
     
     # 🔥 ADD BUTTON
     observeEvent(input$add, {
