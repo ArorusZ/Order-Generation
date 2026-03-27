@@ -10,6 +10,8 @@ RUN Rscript -e "install.packages('DT', repos='https://cran.rstudio.com/', depend
 
 RUN Rscript -e "install.packages('RPostgres', repos='https://cran.rstudio.com/', dependencies=TRUE)"
 
+RUN Rscript -e "install.packages('DBI', repos='https://cran.rstudio.com/', dependencies=TRUE)"
+
 RUN rm -rf /srv/shiny-server/*
 
 COPY . /srv/shiny-server/
