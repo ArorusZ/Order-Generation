@@ -74,29 +74,31 @@ scripMasterServer <- function(id, shared) {
     loaded <- reactiveVal(FALSE)
     
     observeEvent(shared$device_id, {
-      saved_data <- load_scrip(shared$device_id)
-  
-      if (is.null(saved_data)) return()
-  
-      n <- nrow(saved_data)
-      count(n)
-      active_rows(seq_len(n))
-  
+  later::later(function() {
+    saved_data <- load_scrip(shared$device_id)
+    
+    if (is.null(saved_data)) return()
+    
+    n <- nrow(saved_data)
+    count(n)
+    active_rows(seq_len(n))
+    
+    for (i in seq_len(n)) {
+      add_row(i)
+    }
+    
+    later::later(function() {
       for (i in seq_len(n)) {
-        add_row(i)
+        updateTextInput(session, paste0("isin", i),     value = saved_data$ISIN[i])
+        updateTextInput(session, paste0("security", i), value = saved_data$Security[i])
+        updateTextInput(session, paste0("short", i),    value = saved_data$Shortname[i])
+        updateTextInput(session, paste0("sector", i),   value = saved_data$Sector[i])
+        updateTextInput(session, paste0("mcap", i),     value = saved_data$Mcap[i])
       }
-  
-      later::later(function() {
-        for (i in seq_len(n)) {
-          updateTextInput(session, paste0("isin", i),     value = saved_data$ISIN[i])
-          updateTextInput(session, paste0("security", i), value = saved_data$Security[i])
-          updateTextInput(session, paste0("short", i),    value = saved_data$Shortname[i])
-          updateTextInput(session, paste0("sector", i),   value = saved_data$Sector[i])
-          updateTextInput(session, paste0("mcap", i),     value = saved_data$Mcap[i])
-        }
-      }, delay = 0.1)
-  
-  loaded(TRUE)
+    }, delay = 0.3)
+    
+    loaded(TRUE)
+  }, delay = 0.5)
 }, once = TRUE)
     
     # ADD BUTTON
