@@ -221,6 +221,7 @@ modelPortfolioServer <- function(id, shared) {
     
     # 🔥 SAVE
     observeEvent(input$save, {
+      req(shared$device_id)
       df_final <- live_portfolio()
       
       if (!is.null(df_final)) {
