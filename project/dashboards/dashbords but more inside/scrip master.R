@@ -129,11 +129,11 @@ scripMasterServer <- function(id, shared) {
     
     # SAVE BUTTON (optional persistence)
     observeEvent(input$save, {
-      
+      req(shared$device_id)
       df <- live_data()
       
       if (!is.null(df)) {
-        save_scrip(df)
+        save_scrip(live_data(), shared$device_id)
         showNotification("Data saved!", type = "message")
       } else {
         showNotification("No data!", type = "error")
