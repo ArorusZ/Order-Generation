@@ -4,22 +4,21 @@ library(DBI)
 # Connect to database
 get_con <- function() {
   url <- Sys.getenv("DATABASE_URL")
-  
-  # Remove postgresql:// or postgres:// prefix
   url <- gsub("^postgres(ql)?://", "", url)
-
-  message("DATABASE_URL: ", url)
-  message("Parsed - host: ", host, " port: ", port, " db: ", dbname)
   
-  # Extract using regex
-  # Format: user:password@host:port/dbname
-  matches <- regmatches(url, regexec("^([^:]+):([^@]+)@([^:]+):([0-9]+)/(.+)$", url))[[1]]
+  # Split user:password from the rest
+  user_pass <- sub("@.*", "", url)
+  host_rest <- sub(".*@", "", url)
   
-  user     <- matches[2]
-  password <- matches[3]
-  host     <- matches[4]
-  port     <- as.integer(matches[5])
-  dbname   <- matches[6]
+  user     <- sub(":.*", "", user_pass)
+  password <- sub(".*:", "", user_pass)
+  
+  # Host may or may not have a port
+  host   <- sub("[:/].*", "", host_rest)
+  dbname <- sub(".*/", "", host_rest)
+  port   <- if (grepl(":", host_rest)) as.integer(sub(".*:(\\d+)/.*", "\\1", host_rest)) else 5432L
+  
+  message("Parsed - user: ", user, " host: ", host, " port: ", port, " db: ", dbname)
   
   dbConnect(
     RPostgres::Postgres(),
