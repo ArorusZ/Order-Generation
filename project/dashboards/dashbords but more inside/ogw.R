@@ -80,8 +80,10 @@ portfolioServer <- function(id, shared) {
     saved_calc <- reactiveVal(NULL)
 
     observeEvent(shared$device_id, {
-      saved_calc(load_ogw(shared$device_id))
-    }, once = TRUE)
+  later::later(function() {
+    saved_calc(load_ogw(shared$device_id))
+  }, delay = 0.5)
+}, once = TRUE)
     
     # UPDATE saved_lookup
     saved_lookup <- function(sec) {
