@@ -77,21 +77,24 @@ portfolioServer <- function(id, shared) {
     })
     
     # LOAD
-    saved_calc <- NULL
-    source("functions/db_handler.R")
-    saved_calc <- load_ogw()
+    saved_calc <- reactiveVal(NULL)
+
+    observeEvent(shared$device_id, {
+      saved_calc(load_ogw(shared$device_id))
+    }, once = TRUE)
     
+    # UPDATE saved_lookup
     saved_lookup <- function(sec) {
-      if (is.null(saved_calc)) return(NULL)
-      row <- saved_calc[saved_calc$Security == sec, ]
+      if (is.null(saved_calc())) return(NULL)
+      row <- saved_calc()[saved_calc()$Security == sec, ]
       if (nrow(row) == 0) return(NULL)
       row
     }
-    
-    # RESTORE AUM
+
+    # UPDATE AUM restore
     observe({
-      if (!is.null(saved_calc) && "amt" %in% colnames(saved_calc)) {
-        updateNumericInput(session, "amt", value = saved_calc$amt[1])
+      if (!is.null(saved_calc()) && "amt" %in% colnames(saved_calc())) {
+      updateNumericInput(session, "amt", value = saved_calc()$amt[1])
       }
     })
     
