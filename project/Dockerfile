@@ -1,16 +1,16 @@
 FROM rocker/shiny:latest
 
-RUN apt-get update && apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libpq-dev
 
 RUN Rscript -e "install.packages('later', repos='https://cran.rstudio.com/', dependencies=TRUE)"
-
 RUN Rscript -e "install.packages('dplyr', repos='https://cran.rstudio.com/', dependencies=TRUE)"
-
 RUN Rscript -e "install.packages('DT', repos='https://cran.rstudio.com/', dependencies=TRUE)"
-
-RUN Rscript -e "install.packages('RPostgres', repos='https://cran.rstudio.com/', dependencies=TRUE)"
-
 RUN Rscript -e "install.packages('DBI', repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN Rscript -e "install.packages('RPostgres', repos='https://cran.rstudio.com/', dependencies=TRUE)"
 
 RUN rm -rf /srv/shiny-server/*
 
