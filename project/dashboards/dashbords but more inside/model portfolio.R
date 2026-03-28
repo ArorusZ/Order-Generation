@@ -127,8 +127,9 @@ modelPortfolioServer <- function(id, shared) {
     loaded <- reactiveVal(FALSE)
     
     observeEvent(shared$device_id, {
-  later::later(function() {
-    saved_portfolio <- load_portfolio(shared$device_id)
+      dev_id <- shared$device_id
+      later::later(function() {
+        saved_portfolio <- load_portfolio(dev_id)
     
     if (is.null(saved_portfolio)) return()
     if (loaded()) return()
