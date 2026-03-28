@@ -42,10 +42,9 @@ save_scrip <- function(df, device_id) {
   tryCatch({
     con <- get_con()
     df$device_id <- device_id
-    dbWriteTable(con, "scrip_master", df[df$device_id == device_id, ],
-                 overwrite = FALSE, append = TRUE)
-    # Delete old rows for this device first
-    dbExecute(con, "DELETE FROM scrip_master WHERE device_id = $1", list(device_id))
+    if (dbExistsTable(con, "scrip_master")) {
+      dbExecute(con, "DELETE FROM scrip_master WHERE device_id = $1", list(device_id))
+    }
     dbWriteTable(con, "scrip_master", df, overwrite = FALSE, append = TRUE)
     dbDisconnect(con)
   }, error = function(e) message("Save error: ", e$message))
@@ -70,12 +69,14 @@ save_ogw <- function(df, device_id) {
   tryCatch({
     con <- get_con()
     df$device_id <- device_id
-    dbExecute(con, "DELETE FROM ogw WHERE device_id = $1", list(device_id))
+    if (dbExistsTable(con, "ogw")) {
+      dbExecute(con, "DELETE FROM ogw WHERE device_id = $1", list(device_id))
+    }
     dbWriteTable(con, "ogw", df, overwrite = FALSE, append = TRUE)
     dbDisconnect(con)
   }, error = function(e) message("Save error: ", e$message))
 }
-
+           
 load_ogw <- function(device_id) {
   tryCatch({
     con <- get_con()
@@ -95,7 +96,9 @@ save_portfolio <- function(df, device_id) {
   tryCatch({
     con <- get_con()
     df$device_id <- device_id
-    dbExecute(con, "DELETE FROM portfolio WHERE device_id = $1", list(device_id))
+    if (dbExistsTable(con, "portfolio")) {
+      dbExecute(con, "DELETE FROM portfolio WHERE device_id = $1", list(device_id))
+    }
     dbWriteTable(con, "portfolio", df, overwrite = FALSE, append = TRUE)
     dbDisconnect(con)
   }, error = function(e) message("Save error: ", e$message))
