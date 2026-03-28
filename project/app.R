@@ -5,6 +5,7 @@ source("dashboards/dashbords but more inside/model portfolio.R")
 source("dashboards/dashbords but more inside/ogw.R")
 source("dashboards/dashbords but more inside/order_file.R")
 source("functions/db_handler.R")
+reset_tables() 
 
 ui <- fluidPage(
   tags$head(
