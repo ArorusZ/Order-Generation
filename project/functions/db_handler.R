@@ -25,6 +25,18 @@ get_con <- function() {
   )
 }
 
+# Add to db_handler.R
+reset_tables <- function() {
+  tryCatch({
+    con <- get_con()
+    dbExecute(con, "DROP TABLE IF EXISTS portfolio")
+    dbExecute(con, "DROP TABLE IF EXISTS ogw")
+    dbExecute(con, "DROP TABLE IF EXISTS scrip_master")
+    dbDisconnect(con)
+    message("Tables dropped successfully")
+  }, error = function(e) message("Reset error: ", e$message))
+}
+           
 # SCRIP MASTER
 save_scrip <- function(df, device_id) {
   tryCatch({
