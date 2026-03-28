@@ -81,8 +81,8 @@ scripMasterServer <- function(id, shared) {
     if (is.null(saved_data)) return()
     
     n <- nrow(saved_data)
-    count(n)
-    active_rows(seq_len(n))
+    isolate(count(n))
+    isolate(active_rows(seq_len(n)))
     
     for (i in seq_len(n)) {
       add_row(i)
@@ -96,7 +96,7 @@ scripMasterServer <- function(id, shared) {
         updateTextInput(session, paste0("sector", i),   value = saved_data$Sector[i])
         updateTextInput(session, paste0("mcap", i),     value = saved_data$Mcap[i])
       }
-      loaded(TRUE)
+      isolate(loaded(TRUE))
     }, once = TRUE)
     
   }, once = TRUE)
