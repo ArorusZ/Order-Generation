@@ -74,8 +74,9 @@ scripMasterServer <- function(id, shared) {
     loaded <- reactiveVal(FALSE)
     
     observeEvent(shared$device_id, {
-  later::later(function() {
-    saved_data <- load_scrip(shared$device_id)
+      dev_id <- shared$device_id
+      later::later(function() {
+        saved_data <- load_scrip(dev_id)
     
     if (is.null(saved_data)) return()
     
