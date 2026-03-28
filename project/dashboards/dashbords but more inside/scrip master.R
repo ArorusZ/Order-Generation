@@ -74,10 +74,10 @@ scripMasterServer <- function(id, shared) {
     loaded <- reactiveVal(FALSE)
     
     observeEvent(shared$device_id, {
-      dev_id <- shared$device_id
-      later::later(function() {
-        saved_data <- load_scrip(dev_id)
-    
+  dev_id <- shared$device_id
+  
+  session$onFlushed(function() {
+    saved_data <- load_scrip(dev_id)
     if (is.null(saved_data)) return()
     
     n <- nrow(saved_data)
@@ -88,7 +88,7 @@ scripMasterServer <- function(id, shared) {
       add_row(i)
     }
     
-    later::later(function() {
+    session$onFlushed(function() {
       for (i in seq_len(n)) {
         updateTextInput(session, paste0("isin", i),     value = saved_data$ISIN[i])
         updateTextInput(session, paste0("security", i), value = saved_data$Security[i])
@@ -96,10 +96,10 @@ scripMasterServer <- function(id, shared) {
         updateTextInput(session, paste0("sector", i),   value = saved_data$Sector[i])
         updateTextInput(session, paste0("mcap", i),     value = saved_data$Mcap[i])
       }
-    }, delay = 0.3)
+      loaded(TRUE)
+    }, once = TRUE)
     
-    loaded(TRUE)
-  }, delay = 0.5)
+  }, once = TRUE)
 }, once = TRUE)
     
     # ADD BUTTON
