@@ -81,9 +81,10 @@ portfolioServer <- function(id, shared) {
 
     observeEvent(shared$device_id, {
       dev_id <- shared$device_id
-      later::later(function() {
+  
+      session$onFlushed(function() {
         saved_calc(load_ogw(dev_id))
-      }, delay = 0.5)
+      }, once = TRUE)
     }, once = TRUE)
     
     # UPDATE saved_lookup
