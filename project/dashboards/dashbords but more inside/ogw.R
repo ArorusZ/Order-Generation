@@ -80,12 +80,12 @@ portfolioServer <- function(id, shared) {
     saved_calc <- reactiveVal(NULL)
 
     observeEvent(shared$device_id, {
-      dev_id <- shared$device_id
+  dev_id <- shared$device_id
   
-      session$onFlushed(function() {
-        saved_calc(load_ogw(dev_id))
-      }, once = TRUE)
-    }, once = TRUE)
+  session$onFlushed(function() {
+    isolate(saved_calc(load_ogw(dev_id)))
+  }, once = TRUE)
+}, once = TRUE)
     
     # UPDATE saved_lookup
     saved_lookup <- function(sec) {
