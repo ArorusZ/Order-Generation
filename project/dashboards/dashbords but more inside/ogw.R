@@ -41,7 +41,7 @@ portfolioUI <- function(id) {
         
         actionButton(ns("save"), "Save Data"),
         column(4, br(), fileInput(ns("upload_excel"), "Upload from Excel", accept = ".xlsx")),
-        uiOutput(ns("sheet_selector"))
+        uiOutput(ns("sheet_selector")),
         
         br(), br(),
         
