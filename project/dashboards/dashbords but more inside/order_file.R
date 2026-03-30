@@ -1,12 +1,14 @@
 library(shiny)
 library(dplyr)
 library(DT)
+library(openxlsx)
 
 o_fUI <- function(id){
   ns <- NS(id)
   
   fluidPage(
   titlePanel("Order File"),
+  downloadButton(ns("download"), "Download Order File"),
   DTOutput(ns("final_table"))
   )
 }
@@ -45,6 +47,19 @@ o_fServer <- function(id, shared) {
     observe({
       shared$order_file <- merged_data()
     })
+
+    output$download <- downloadHandler(
+      filename = function() {
+        paste0("order_file_", Sys.Date(), ".xlsx")
+      },
+      content = function(file) {
+        req(merged_data())
+        wb <- openxlsx::createWorkbook()
+        openxlsx::addWorksheet(wb, "Order File")
+        openxlsx::writeData(wb, "Order File", merged_data())
+        openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+      }
+    )
     
   })
 }
