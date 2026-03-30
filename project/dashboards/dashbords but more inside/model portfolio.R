@@ -1,4 +1,5 @@
 library(shiny)
+library(openxlsx)
 
 modelPortfolioUI <- function(id) { 
   ns <- NS(id) 
@@ -10,7 +11,8 @@ modelPortfolioUI <- function(id) {
         
         fluidRow( 
           column(4, br(), actionButton(ns("add"), "Add Company")), 
-          column(4, br(), actionButton(ns("save"), "Save Portfolio")) 
+          column(4, br(), actionButton(ns("save"), "Save Portfolio")),
+          column(4, br(), fileInput(ns("upload_excel"), "Upload from Excel", accept = ".xlsx"),uiOutput(ns("sheet_selector"))
         ), 
         
         br(), 
@@ -131,6 +133,106 @@ modelPortfolioServer <- function(id, shared) {
         active_rows(setdiff(active_rows(), i))
       }, ignoreInit = TRUE)
     }
+
+    # SHOW SHEET SELECTOR AFTER FILE UPLOAD
+    output$sheet_selector <- renderUI({
+      req(input$upload_excel)
+  
+      tryCatch({
+        sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
+    
+        if (length(sheets) == 1) return(NULL)  # only one sheet — no need to show
+    
+        tagList(
+          selectInput(ns("sheet_choice"), "Select Sheet", choices = sheets),
+          actionButton(ns("confirm_sheet"), "Load Sheet", 
+                       style = "margin-top: 5px;")
+        )
+      }, error = function(e) NULL)
+    })
+    
+    # EXCEL UPLOAD
+    observeEvent(input$upload_excel, {
+      req(input$upload_excel, securities())
+  
+      tryCatch({
+        xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
+        
+        # Normalize column names
+        names(xl) <- tolower(trimws(gsub("\\s+", " ", names(xl))))
+    
+        message("Excel columns found: ", paste(names(xl), collapse = ", "))
+    
+        # Flexible column detection
+        sec_col   <- names(xl)[grepl("security",   names(xl))][1]
+        alloc_col <- names(xl)[grepl("allocation", names(xl))][1]
+    
+        if (is.na(sec_col) || is.na(alloc_col)) {
+          showNotification(
+            paste("Could not find columns. Found:", paste(names(xl), collapse = ", ")),
+            type = "error"
+          )
+          return()
+        }
+    
+        # Normalize securities from scrip master
+        valid_securities <- tolower(trimws(gsub("\\s+", " ", securities())))
+    
+        # Filter excel rows — only keep securities that exist in scrip master
+        xl$normalized_sec <- tolower(trimws(gsub("\\s+", " ", xl[[sec_col]])))
+        xl_valid <- xl[xl$normalized_sec %in% valid_securities, ]
+        xl_skipped <- xl[!xl$normalized_sec %in% valid_securities, ]
+    
+        if (nrow(xl_skipped) > 0) {
+          message("Skipped securities not in scrip master: ", 
+                  paste(xl_skipped[[sec_col]], collapse = ", "))
+          showNotification(
+            paste("Skipped", nrow(xl_skipped), "securities not in Scrip Master:",
+                  paste(xl_skipped[[sec_col]], collapse = ", ")),
+            type = "warning",
+            duration = 8
+          )
+        }
+    
+        if (nrow(xl_valid) == 0) {
+          showNotification("No valid securities found in Scrip Master!", type = "error")
+          return()
+        }
+    
+        # Clear existing rows
+        current_rows <- active_rows()
+        for (i in current_rows) {
+          removeUI(selector = paste0("#", ns(paste0("row", i))))
+        }
+        active_rows(integer(0))
+        count(0)
+    
+        # Get original security names from scrip master for display
+        scrip_secs <- securities()
+    
+        n <- nrow(xl_valid)
+    
+        for (i in seq_len(n)) {
+          # Match back to original casing from scrip master
+          original_sec <- scrip_secs[tolower(trimws(gsub("\\s+", " ", scrip_secs))) == 
+                                       xl_valid$normalized_sec[i]][1]
+          alloc_val <- round(as.numeric(xl_valid[[alloc_col]][i]), 2)
+      
+          new_id <- count() + 1
+          count(new_id)
+          active_rows(c(active_rows(), new_id))
+          add_row(new_id, sec_val = original_sec, alloc_val = alloc_val)
+        }
+    
+        showNotification(
+          paste(n, "companies uploaded successfully!"),
+          type = "message"
+        )
+    
+      }, error = function(e) {
+        showNotification(paste("Upload error:", e$message), type = "error")
+      })
+    })
     
     loaded <- reactiveVal(FALSE)
     
