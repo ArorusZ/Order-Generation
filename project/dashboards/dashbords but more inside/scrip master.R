@@ -61,7 +61,7 @@ scripMasterServer <- function(id, shared) {
           div(textInput(ns(paste0("short", i)),    NULL), class = "col-sm"),
           div(textInput(ns(paste0("sector", i)),   NULL), class = "col-sm"),
           div(selectInput(ns(paste0("mcap", i)),   NULL,  # ← changed
-                      choices  = c("", "Large Cap", "Medium Cap", "Small Cap"),
+                      choices  = c("", "Large Cap", "Mid Cap", "Small Cap"),
                       selected = ""),                  class = "col-sm"),
           div(actionButton(ns(paste0("remove", i)), "X"), class = "col-sm")
         )
