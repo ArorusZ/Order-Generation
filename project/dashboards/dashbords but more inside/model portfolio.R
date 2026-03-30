@@ -12,8 +12,11 @@ modelPortfolioUI <- function(id) {
         fluidRow( 
           column(4, br(), actionButton(ns("add"), "Add Company")), 
           column(4, br(), actionButton(ns("save"), "Save Portfolio")),
-          column(4, br(), fileInput(ns("upload_excel"), "Upload from Excel", accept = ".xlsx"),uiOutput(ns("sheet_selector"))
-        ), 
+          column(4, br(), 
+                 fileInput(ns("upload_excel"), "Upload from Excel", accept = ".xlsx"),
+                 uiOutput(ns("sheet_selector"))
+          )                                                           # ← closes column(4,
+        ),                                                            # ← closes fluidRow(
         
         br(), 
         
@@ -30,10 +33,10 @@ modelPortfolioUI <- function(id) {
         
         div(
           class = "flex-row data-row",
-          div("",                              class = "col-sm"),   # blank — lines up under Sr.No
-          div(strong("Cash"),                  class = "col-lg"),   # lines up under Security Name
-          div(textOutput(ns("cash_value")),    class = "col-sm"),   # lines up under Allocation(%)
-          div("",                              class = "col-sm")    # blank — lines up under Remove
+          div("",                           class = "col-sm"),
+          div(strong("Cash"),               class = "col-lg"),
+          div(textOutput(ns("cash_value")), class = "col-sm"),
+          div("",                           class = "col-sm")
         )
     )
   ) 
@@ -136,103 +139,77 @@ modelPortfolioServer <- function(id, shared) {
 
     # SHOW SHEET SELECTOR AFTER FILE UPLOAD
     output$sheet_selector <- renderUI({
-      req(input$upload_excel)
-  
-      tryCatch({
-        sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
-    
-        if (length(sheets) == 1) return(NULL)  # only one sheet — no need to show
-    
-        tagList(
-          selectInput(ns("sheet_choice"), "Select Sheet", choices = sheets),
-          actionButton(ns("confirm_sheet"), "Load Sheet", 
-                       style = "margin-top: 5px;")
-        )
-      }, error = function(e) NULL)
-    })
-    
-    # EXCEL UPLOAD
-    observeEvent(input$upload_excel, {
-      req(input$upload_excel, securities())
-  
-      tryCatch({
-        xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
-        
-        # Normalize column names
-        names(xl) <- tolower(trimws(gsub("\\s+", " ", names(xl))))
-    
-        message("Excel columns found: ", paste(names(xl), collapse = ", "))
-    
-        # Flexible column detection
-        sec_col   <- names(xl)[grepl("security",   names(xl))][1]
-        alloc_col <- names(xl)[grepl("allocation", names(xl))][1]
-    
-        if (is.na(sec_col) || is.na(alloc_col)) {
-          showNotification(
-            paste("Could not find columns. Found:", paste(names(xl), collapse = ", ")),
-            type = "error"
-          )
-          return()
-        }
-    
-        # Normalize securities from scrip master
-        valid_securities <- tolower(trimws(gsub("\\s+", " ", securities())))
-    
-        # Filter excel rows — only keep securities that exist in scrip master
-        xl$normalized_sec <- tolower(trimws(gsub("\\s+", " ", xl[[sec_col]])))
-        xl_valid <- xl[xl$normalized_sec %in% valid_securities, ]
-        xl_skipped <- xl[!xl$normalized_sec %in% valid_securities, ]
-    
-        if (nrow(xl_skipped) > 0) {
-          message("Skipped securities not in scrip master: ", 
-                  paste(xl_skipped[[sec_col]], collapse = ", "))
-          showNotification(
-            paste("Skipped", nrow(xl_skipped), "securities not in Scrip Master:",
-                  paste(xl_skipped[[sec_col]], collapse = ", ")),
-            type = "warning",
-            duration = 8
-          )
-        }
-    
-        if (nrow(xl_valid) == 0) {
-          showNotification("No valid securities found in Scrip Master!", type = "error")
-          return()
-        }
-    
-        # Clear existing rows
-        current_rows <- active_rows()
-        for (i in current_rows) {
-          removeUI(selector = paste0("#", ns(paste0("row", i))))
-        }
-        active_rows(integer(0))
-        count(0)
-    
-        # Get original security names from scrip master for display
-        scrip_secs <- securities()
-    
-        n <- nrow(xl_valid)
-    
-        for (i in seq_len(n)) {
-          # Match back to original casing from scrip master
-          original_sec <- scrip_secs[tolower(trimws(gsub("\\s+", " ", scrip_secs))) == 
-                                       xl_valid$normalized_sec[i]][1]
-          alloc_val <- round(as.numeric(xl_valid[[alloc_col]][i]), 2)
-      
+  req(input$upload_excel)
+  tryCatch({
+    sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
+    if (length(sheets) == 1) return(NULL)
+    tagList(
+      selectInput(ns("sheet_choice"), "Select Sheet", choices = sheets),
+      actionButton(ns("confirm_sheet"), "Load Sheet", style = "margin-top: 5px;")
+    )
+  }, error = function(e) NULL)
+})
+
+observeEvent(input$upload_excel, {
+  req(input$upload_excel, securities())
+  tryCatch({
+    sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
+    if (length(sheets) == 1) {
+      load_sheet(
+        filepath   = input$upload_excel$datapath,
+        sheet_name = sheets[1],
+        col_map    = list(sec = "security", alloc = "allocation"),
+        validate_against = securities(),
+        on_clear = function() {
+          current_rows <- active_rows()
+          for (i in current_rows) {
+            removeUI(selector = paste0("#", ns(paste0("row", i))))
+          }
+          active_rows(integer(0))
+          count(0)
+        },
+        on_valid_row = function(i, row, detected) {
+          original_sec <- securities()[tolower(trimws(gsub("\\s+", " ", securities()))) ==
+                                         row$normalized_sec][1]
+          alloc_val <- round(as.numeric(row[[detected[["alloc"]]]]), 2)
           new_id <- count() + 1
           count(new_id)
           active_rows(c(active_rows(), new_id))
           add_row(new_id, sec_val = original_sec, alloc_val = alloc_val)
         }
-    
-        showNotification(
-          paste(n, "companies uploaded successfully!"),
-          type = "message"
-        )
-    
-      }, error = function(e) {
-        showNotification(paste("Upload error:", e$message), type = "error")
-      })
-    })
+      )
+    }
+  }, error = function(e) {
+    showNotification(paste("Upload error:", e$message), type = "error")
+  })
+})
+
+observeEvent(input$confirm_sheet, {
+  req(input$upload_excel, input$sheet_choice, securities())
+  load_sheet(
+    filepath   = input$upload_excel$datapath,
+    sheet_name = input$sheet_choice,
+    col_map    = list(sec = "security", alloc = "allocation"),
+    validate_against = securities(),
+    on_clear = function() {
+      current_rows <- active_rows()
+      for (i in current_rows) {
+        removeUI(selector = paste0("#", ns(paste0("row", i))))
+      }
+      active_rows(integer(0))
+      count(0)
+    },
+    on_valid_row = function(i, row, detected) {
+      original_sec <- securities()[tolower(trimws(gsub("\\s+", " ", securities()))) ==
+                                     row$normalized_sec][1]
+      alloc_val <- round(as.numeric(row[[detected[["alloc"]]]]), 2)
+      new_id <- count() + 1
+      count(new_id)
+      active_rows(c(active_rows(), new_id))
+      add_row(new_id, sec_val = original_sec, alloc_val = alloc_val)
+    }
+  )
+})
     
     loaded <- reactiveVal(FALSE)
     
