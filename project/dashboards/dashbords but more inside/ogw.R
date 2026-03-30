@@ -1,4 +1,5 @@
 library(shiny)
+library(openxlsx)    
 
 portfolioUI <- function(id) {
   ns <- NS(id)
