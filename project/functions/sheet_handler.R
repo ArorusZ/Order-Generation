@@ -1,19 +1,19 @@
 library(openxlsx)
 
 load_sheet <- function(filepath, sheet_name, 
-                       col_map,        # named list e.g. list(sec = "security", alloc = "allocation")
-                       validate_against = NULL,  # vector of valid names to check against (optional)
-                       on_valid_row,    # function(i, row) — what to do with each valid row
-                       on_clear = NULL  # function() — what to do before loading (optional)
-) {
+                       col_map,
+                       validate_against = NULL,
+                       on_valid_row,
+                       on_clear = NULL,
+                       on_complete = NULL    # ← add this
+                       ) {
   tryCatch({
     xl <- openxlsx::read.xlsx(filepath, sheet = sheet_name)
     
     names(xl) <- tolower(trimws(gsub("\\s+", " ", names(xl))))
     
-    message("Excel columns found: ", paste(names(xl), collapse = ", "))
+    sec_col <- names(xl)[grepl(col_map[["sec"]], names(xl))][1]
     
-    # Detect columns flexibly
     detected <- lapply(col_map, function(pattern) {
       names(xl)[grepl(pattern, names(xl))][1]
     })
@@ -28,23 +28,20 @@ load_sheet <- function(filepath, sheet_name,
       return()
     }
     
-    sec_col <- detected[["sec"]]
-    xl$normalized_sec <- tolower(trimws(gsub("\\s+", " ", xl[[sec_col]])))
+    xl$normalized_sec <- tolower(trimws(gsub("\\s+", " ", xl[[detected[["sec"]]]])))
     
-    # Validate against scrip master if provided
     if (!is.null(validate_against)) {
-      valid <- tolower(trimws(gsub("\\s+", " ", validate_against)))
+      valid      <- tolower(trimws(gsub("\\s+", " ", validate_against)))
       xl_valid   <- xl[xl$normalized_sec %in% valid, ]
       xl_skipped <- xl[!xl$normalized_sec %in% valid, ]
       
       if (nrow(xl_skipped) > 0) {
         showNotification(
           paste("Skipped", nrow(xl_skipped), "not in Scrip Master:",
-                paste(xl_skipped[[sec_col]], collapse = ", ")),
+                paste(xl_skipped[[detected[["sec"]]]], collapse = ", ")),
           type = "warning", duration = 8
         )
       }
-      
       if (nrow(xl_valid) == 0) {
         showNotification("No valid securities found!", type = "error")
         return()
@@ -53,13 +50,18 @@ load_sheet <- function(filepath, sheet_name,
       xl_valid <- xl
     }
     
-    # Clear existing rows if needed
     if (!is.null(on_clear)) on_clear()
     
-    # Process each valid row
+    # Store all rows for on_complete
+    all_rows <- list()
+    
     for (i in seq_len(nrow(xl_valid))) {
       on_valid_row(i, xl_valid[i, ], detected)
+      all_rows[[i]] <- xl_valid[i, ]    # ← collect rows
     }
+    
+    # Fire once after all rows processed
+    if (!is.null(on_complete)) on_complete(all_rows, detected)    # ← add this
     
     showNotification(
       paste(nrow(xl_valid), "rows loaded successfully!"),
