@@ -115,72 +115,89 @@ scripMasterServer <- function(id, shared) {
       add_row(new_id)
     })
 
-# EXCEL UPLOAD
+output$sheet_selector <- renderUI({
+  req(input$upload_excel)
+  tryCatch({
+    sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
+    if (length(sheets) == 1) return(NULL)
+    tagList(
+      selectInput(ns("sheet_choice"), "Select Sheet", choices = sheets),
+      actionButton(ns("confirm_sheet"), "Load Sheet", style = "margin-top: 5px;")
+    )
+  }, error = function(e) NULL)
+})
+
 observeEvent(input$upload_excel, {
   req(input$upload_excel)
-  
   tryCatch({
-    xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
-    
-    # Normalize column names
-    names(xl) <- tolower(trimws(gsub("\\s+", " ", names(xl))))
-    
-    message("Excel columns found: ", paste(names(xl), collapse = ", "))
-    
-    # Flexible column detection
-    isin_col     <- names(xl)[grepl("isin",     names(xl))][1]
-    sec_col      <- names(xl)[grepl("security", names(xl))][1]
-    short_col    <- names(xl)[grepl("short",    names(xl))][1]
-    sector_col   <- names(xl)[grepl("sector",   names(xl))][1]
-    mcap_col     <- names(xl)[grepl("mcap",     names(xl))][1]
-    
-    if (any(is.na(c(isin_col, sec_col, short_col, sector_col, mcap_col)))) {
-      showNotification(
-        paste("Could not find all columns. Found:", paste(names(xl), collapse = ", ")),
-        type = "error"
+    sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
+    if (length(sheets) == 1) {
+      load_sheet(
+        filepath   = input$upload_excel$datapath,
+        sheet_name = sheets[1],
+        col_map    = list(sec = "security", isin = "isin", short = "short",
+                          sector = "sector", mcap = "mcap"),
+        validate_against = NULL,
+        on_clear = function() {
+          current_rows <- active_rows()
+          for (i in current_rows) {
+            removeUI(selector = paste0("#", ns(paste0("row", i))))
+          }
+          active_rows(integer(0))
+          count(0)
+        },
+        on_valid_row = function(i, row, detected) {
+          new_id <- count() + 1
+          count(new_id)
+          active_rows(c(active_rows(), new_id))
+          add_row(new_id)
+          session$onFlushed(function() {
+            updateTextInput(session,   paste0("isin", i),     value = trimws(row[[detected[["isin"]]]]))
+            updateTextInput(session,   paste0("security", i), value = trimws(row[[detected[["sec"]]]]))
+            updateTextInput(session,   paste0("short", i),    value = trimws(row[[detected[["short"]]]]))
+            updateTextInput(session,   paste0("sector", i),   value = trimws(row[[detected[["sector"]]]]))
+            updateSelectInput(session, paste0("mcap", i),
+                              selected = tools::toTitleCase(tolower(trimws(row[[detected[["mcap"]]]]))))
+          }, once = TRUE)
+        }
       )
-      return()
     }
-    
-    n <- nrow(xl)
-    
-    # Clear existing rows first
-    current_rows <- active_rows()
-    for (i in current_rows) {
-      removeUI(selector = paste0("#", ns(paste0("row", i))))
-    }
-    active_rows(integer(0))
-    count(0)
-    
-    # Add new rows from excel
-    for (i in seq_len(n)) {
+  }, error = function(e) {
+    showNotification(paste("Upload error:", e$message), type = "error")
+  })
+})
+
+observeEvent(input$confirm_sheet, {
+  req(input$upload_excel, input$sheet_choice)
+  load_sheet(
+    filepath   = input$upload_excel$datapath,
+    sheet_name = input$sheet_choice,
+    col_map    = list(sec = "security", isin = "isin", short = "short",
+                      sector = "sector", mcap = "mcap"),
+    validate_against = NULL,
+    on_clear = function() {
+      current_rows <- active_rows()
+      for (i in current_rows) {
+        removeUI(selector = paste0("#", ns(paste0("row", i))))
+      }
+      active_rows(integer(0))
+      count(0)
+    },
+    on_valid_row = function(i, row, detected) {
       new_id <- count() + 1
       count(new_id)
       active_rows(c(active_rows(), new_id))
       add_row(new_id)
+      session$onFlushed(function() {
+        updateTextInput(session,   paste0("isin", i),     value = trimws(row[[detected[["isin"]]]]))
+        updateTextInput(session,   paste0("security", i), value = trimws(row[[detected[["sec"]]]]))
+        updateTextInput(session,   paste0("short", i),    value = trimws(row[[detected[["short"]]]]))
+        updateTextInput(session,   paste0("sector", i),   value = trimws(row[[detected[["sector"]]]]))
+        updateSelectInput(session, paste0("mcap", i),
+                          selected = tools::toTitleCase(tolower(trimws(row[[detected[["mcap"]]]]))))
+      }, once = TRUE)
     }
-    
-    # Fill values after rows are created
-    session$onFlushed(function() {
-      for (i in seq_len(n)) {
-        updateTextInput(session, paste0("isin", i),     
-                        value = trimws(xl[[isin_col]][i]))
-        updateTextInput(session, paste0("security", i), 
-                        value = trimws(xl[[sec_col]][i]))
-        updateTextInput(session, paste0("short", i),    
-                        value = trimws(xl[[short_col]][i]))
-        updateTextInput(session, paste0("sector", i),   
-                        value = trimws(xl[[sector_col]][i]))
-        updateTextInput(session, paste0("mcap", i),     
-                        value = trimws(xl[[mcap_col]][i]))
-      }
-    }, once = TRUE)
-    
-    showNotification(paste(n, "companies uploaded successfully!"), type = "message")
-    
-  }, error = function(e) {
-    showNotification(paste("Upload error:", e$message), type = "error")
-  })
+  )
 })
     
     # ROW NUMBERS
