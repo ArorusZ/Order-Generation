@@ -60,7 +60,9 @@ scripMasterServer <- function(id, shared) {
           div(textInput(ns(paste0("security", i)), NULL), class = "col-lg"),
           div(textInput(ns(paste0("short", i)),    NULL), class = "col-sm"),
           div(textInput(ns(paste0("sector", i)),   NULL), class = "col-sm"),
-          div(textInput(ns(paste0("mcap", i)),     NULL), class = "col-sm"),
+          div(selectInput(ns(paste0("mcap", i)),   NULL,  # ← changed
+                      choices  = c("", "Large", "Medium", "Small"),
+                      selected = ""),                  class = "col-sm"),
           div(actionButton(ns(paste0("remove", i)), "X"), class = "col-sm")
         )
       )
