@@ -146,19 +146,25 @@ observeEvent(input$upload_excel, {
           active_rows(integer(0))
           count(0)
         },
-        on_valid_row = function(i, row, detected) {
+        oon_valid_row = function(i, row, detected) {
           new_id <- count() + 1
           count(new_id)
           active_rows(c(active_rows(), new_id))
           add_row(new_id)
-          session$onFlushed(function() {
-            updateTextInput(session,   paste0("isin", i),     value = trimws(row[[detected[["isin"]]]]))
-            updateTextInput(session,   paste0("security", i), value = trimws(row[[detected[["sec"]]]]))
-            updateTextInput(session,   paste0("short", i),    value = trimws(row[[detected[["short"]]]]))
-            updateTextInput(session,   paste0("sector", i),   value = trimws(row[[detected[["sector"]]]]))
-            updateSelectInput(session, paste0("mcap", i),
-                              selected = tools::toTitleCase(tolower(trimws(row[[detected[["mcap"]]]]))))
-          }, once = TRUE)
+  
+          local({                          # ← wrap in local
+            captured_i   <- i              # ← capture i
+            captured_row <- row            # ← capture row
+    
+            session$onFlushed(function() {
+              updateTextInput(session,   paste0("isin",     captured_i), value = trimws(captured_row[[detected[["isin"]]]]))
+              updateTextInput(session,   paste0("security", captured_i), value = trimws(captured_row[[detected[["sec"]]]]))
+              updateTextInput(session,   paste0("short",    captured_i), value = trimws(captured_row[[detected[["short"]]]]))
+              updateTextInput(session,   paste0("sector",   captured_i), value = trimws(captured_row[[detected[["sector"]]]]))
+              updateSelectInput(session, paste0("mcap",     captured_i),
+                                selected = tools::toTitleCase(tolower(trimws(captured_row[[detected[["mcap"]]]]))))
+            }, once = TRUE)
+          })
         }
       )
     }
