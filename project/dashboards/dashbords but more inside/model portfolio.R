@@ -95,25 +95,33 @@ modelPortfolioServer <- function(id, shared) {
       # 🔥 DROPDOWN WITH PREFILL
       output[[paste0("security_ui", i)]] <- renderUI({
         req(securities())
-        
+  
         choices <- securities()
-        
-        # 🔥 CURRENT VALUE (most important)
+  
         current <- input[[paste0("Security", i)]]
-        
-        # fallback to saved value
-        selected_val <- if (!is.null(current)) current else sec_val
-        
-        # ensure selected value exists in choices
-        if (!is.null(selected_val) && !(selected_val %in% choices)) {
-          choices <- c(choices, selected_val)
+        selected_val <- if (!is.null(current) && current != "") current else sec_val
+  
+        # Get all selected values from OTHER rows
+        rows <- active_rows()
+        other_selected <- sapply(rows[rows != i], function(j) {
+          input[[paste0("Security", j)]]
+        })
+        other_selected <- other_selected[!is.na(other_selected) & other_selected != ""]
+  
+        # Remove other rows' selections from this dropdown
+        available_choices <- choices[!choices %in% other_selected]
+  
+        # Always keep current row's own selection in the list
+        if (!is.null(selected_val) && selected_val != "" && 
+            !(selected_val %in% available_choices)) {
+          available_choices <- c(available_choices, selected_val)
         }
-        
+  
         selectInput(
           ns(paste0("Security", i)),
           NULL,
-          choices = choices,
-          selected = selected_val,   # ✅ FIXED
+          choices  = available_choices,
+          selected = selected_val,
           selectize = FALSE
         )
       })
