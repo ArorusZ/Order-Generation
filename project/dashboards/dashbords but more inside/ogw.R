@@ -226,7 +226,7 @@ portfolioServer <- function(id, shared) {
       
       input_id <- input$enter_pressed
       
-      idx <- as.numeric(gsub(".*(\\d+)$", "\\1", input_id))
+      idx <- as.numeric(regmatches(input_id, regexpr("[0-9]+$", input_id)))
       if (is.na(idx)) return()
       
       is_qty  <- grepl("approved_qty", input_id)
