@@ -1,5 +1,6 @@
 library(shiny)
 library(later)
+library(openxlsx)
 
 scripMasterUI <- function(id) {
   ns <- NS(id)
@@ -10,7 +11,8 @@ scripMasterUI <- function(id) {
     div(style = "max-width: 1600px; margin: auto;",
         fluidRow(
           column(4, br(), actionButton(ns("add"), "Add Company")),
-          column(4, br(), actionButton(ns("save"), "Save Data"))
+          column(4, br(), actionButton(ns("save"), "Save Data")),
+          column(4, br(), fileInput(ns("upload_excel"), "Upload from Excel", accept = ".xlsx"))
         ),
         
         br(),
@@ -109,6 +111,74 @@ scripMasterServer <- function(id, shared) {
       active_rows(c(active_rows(), new_id))
       add_row(new_id)
     })
+
+# EXCEL UPLOAD
+observeEvent(input$upload_excel, {
+  req(input$upload_excel)
+  
+  tryCatch({
+    xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
+    
+    # Normalize column names
+    names(xl) <- tolower(trimws(gsub("\\s+", " ", names(xl))))
+    
+    message("Excel columns found: ", paste(names(xl), collapse = ", "))
+    
+    # Flexible column detection
+    isin_col     <- names(xl)[grepl("isin",     names(xl))][1]
+    sec_col      <- names(xl)[grepl("security", names(xl))][1]
+    short_col    <- names(xl)[grepl("short",    names(xl))][1]
+    sector_col   <- names(xl)[grepl("sector",   names(xl))][1]
+    mcap_col     <- names(xl)[grepl("mcap",     names(xl))][1]
+    
+    if (any(is.na(c(isin_col, sec_col, short_col, sector_col, mcap_col)))) {
+      showNotification(
+        paste("Could not find all columns. Found:", paste(names(xl), collapse = ", ")),
+        type = "error"
+      )
+      return()
+    }
+    
+    n <- nrow(xl)
+    
+    # Clear existing rows first
+    current_rows <- active_rows()
+    for (i in current_rows) {
+      removeUI(selector = paste0("#", ns(paste0("row", i))))
+    }
+    active_rows(integer(0))
+    count(0)
+    
+    # Add new rows from excel
+    for (i in seq_len(n)) {
+      new_id <- count() + 1
+      count(new_id)
+      active_rows(c(active_rows(), new_id))
+      add_row(new_id)
+    }
+    
+    # Fill values after rows are created
+    session$onFlushed(function() {
+      for (i in seq_len(n)) {
+        updateTextInput(session, paste0("isin", i),     
+                        value = trimws(xl[[isin_col]][i]))
+        updateTextInput(session, paste0("security", i), 
+                        value = trimws(xl[[sec_col]][i]))
+        updateTextInput(session, paste0("short", i),    
+                        value = trimws(xl[[short_col]][i]))
+        updateTextInput(session, paste0("sector", i),   
+                        value = trimws(xl[[sector_col]][i]))
+        updateTextInput(session, paste0("mcap", i),     
+                        value = trimws(xl[[mcap_col]][i]))
+      }
+    }, once = TRUE)
+    
+    showNotification(paste(n, "companies uploaded successfully!"), type = "message")
+    
+  }, error = function(e) {
+    showNotification(paste("Upload error:", e$message), type = "error")
+  })
+})
     
     # ROW NUMBERS
     observe({
