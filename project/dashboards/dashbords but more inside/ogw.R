@@ -299,8 +299,7 @@ portfolioServer <- function(id, shared) {
   
   if (nrow(match_row) > 0) {
     updateNumericInput(session, paste0("cmp", i),     value = match_row[[cmp_col]][1])
-    updateNumericInput(session, paste0("holding", i), value = match_row[[holding_col]][1])
-  }
+    updateNumericInput(session, paste0("holding", i), value = round(as.numeric(match_row[[holding_col]][1]), 2))
 }
     
     showNotification("Data uploaded successfully!", type = "message")
