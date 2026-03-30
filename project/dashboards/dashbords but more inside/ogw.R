@@ -39,6 +39,7 @@ portfolioUI <- function(id) {
         br(),
         
         actionButton(ns("save"), "Save Data"),
+        fileInput(ns("upload_excel"), "Upload CMP & Holdings", accept = ".xlsx"),
         
         br(), br(),
         
@@ -259,7 +260,46 @@ portfolioServer <- function(id, shared) {
       }
       
     })
+
+        # EXCEL UPLOAD
+    observeEvent(input$upload_excel, {
+      req(input$upload_excel, df())
+  
+      tryCatch({
+        xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
     
+    # Standardize column names
+        names(xl) <- tolower(trimws(names(xl)))
+    
+    # Check required columns exist
+        if (!all(c("security", "cmp", "current holdings") %in% names(xl))) {
+          showNotification("Excel must have Security, CMP and Current Holdings columns!", type = "error")
+          return()
+        }
+    
+        n <- nrow(df())
+    
+        for (i in 1:n) {
+          sec <- df()$Security[i]
+      
+      # Find matching row in excel
+          match_row <- xl[tolower(trimws(xl$security)) == tolower(trimws(sec)), ]
+      
+          if (nrow(match_row) > 0) {
+        # Security found — update CMP and Holdings
+            updateNumericInput(session, paste0("cmp", i),     value = match_row$cmp[1])
+            updateNumericInput(session, paste0("holding", i), value = match_row$`current holdings`[1])
+          }
+      # Security not found — leave blank (do nothing)
+        }
+    
+        showNotification("Data uploaded successfully!", type = "message")
+    
+      }, error = function(e) {
+        showNotification(paste("Upload error:", e$message), type = "error")
+      })
+    })
+
     # CASH
     output$value <- renderText({
       req(df())
