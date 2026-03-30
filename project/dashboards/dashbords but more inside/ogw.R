@@ -40,7 +40,8 @@ portfolioUI <- function(id) {
         br(),
         
         actionButton(ns("save"), "Save Data"),
-        fileInput(ns("upload_excel"), "Upload CMP & Holdings", accept = ".xlsx"),
+        column(4, br(), fileInput(ns("upload_excel"), "Upload from Excel", accept = ".xlsx")),
+        uiOutput(ns("sheet_selector"))
         
         br(), br(),
         
