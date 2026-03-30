@@ -263,52 +263,70 @@ portfolioServer <- function(id, shared) {
       
     })
 
-        # EXCEL UPLOAD
-    observeEvent(input$upload_excel, {
-  req(input$upload_excel, df())
-  
+    # EXCEL UPLOAD
+  output$sheet_selector <- renderUI({
+  req(input$upload_excel)
   tryCatch({
-    xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
-    
-    # Normalize column names — lowercase and remove extra spaces
-    names(xl) <- tolower(trimws(gsub("\\s+", " ", names(xl))))
-    
-    message("Excel columns found: ", paste(names(xl), collapse = ", "))
-    
-    # Flexible column detection
-    cmp_col     <- names(xl)[grepl("cmp", names(xl))][1]
-    holding_col <- names(xl)[grepl("holding", names(xl))][1]
-    sec_col     <- names(xl)[grepl("security", names(xl))][1]
-    
-    if (is.na(cmp_col) || is.na(holding_col) || is.na(sec_col)) {
-      showNotification(
-        paste("Could not find columns. Found:", paste(names(xl), collapse = ", ")),
-        type = "error"
+    sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
+    if (length(sheets) == 1) return(NULL)
+    tagList(
+      selectInput(ns("sheet_choice"), "Select Sheet", choices = sheets),
+      actionButton(ns("confirm_sheet"), "Load Sheet", style = "margin-top: 5px;")
+    )
+  }, error = function(e) NULL)
+})
+
+observeEvent(input$upload_excel, {
+  req(input$upload_excel, df())
+  tryCatch({
+    sheets <- openxlsx::getSheetNames(input$upload_excel$datapath)
+    if (length(sheets) == 1) {
+      load_sheet(
+        filepath   = input$upload_excel$datapath,
+        sheet_name = sheets[1],
+        col_map    = list(sec = "security", cmp = "cmp", holding = "holding"),
+        validate_against = NULL,
+        on_clear   = NULL,
+        on_valid_row = function(i, row, detected) {
+          n <- nrow(df())
+          for (j in 1:n) {
+            tab_sec <- tolower(trimws(gsub("\\s+", " ", df()$Security[j])))
+            if (tab_sec == row$normalized_sec) {
+              updateNumericInput(session, paste0("cmp", j),
+                                 value = round(as.numeric(row[[detected[["cmp"]]]]), 2))
+              updateNumericInput(session, paste0("holding", j),
+                                 value = round(as.numeric(row[[detected[["holding"]]]]), 2))
+            }
+          }
+        }
       )
-      return()
     }
-    
-    n <- nrow(df())
-    
-    for (i in 1:n) {
-  sec <- df()$Security[i]
-  
-  match_row <- xl[
-    tolower(trimws(gsub("\\s+", " ", xl[[sec_col]]))) == 
-    tolower(trimws(gsub("\\s+", " ", sec))), 
-  ]
-  
-  if (nrow(match_row) > 0) {
-    updateNumericInput(session, paste0("cmp", i),     value = match_row[[cmp_col]][1])
-    updateNumericInput(session, paste0("holding", i), value = round(as.numeric(match_row[[holding_col]][1]), 2))
-  }
-}
-    
-    showNotification("Data uploaded successfully!", type = "message")
-    
   }, error = function(e) {
     showNotification(paste("Upload error:", e$message), type = "error")
   })
+})
+
+observeEvent(input$confirm_sheet, {
+  req(input$upload_excel, input$sheet_choice, df())
+  load_sheet(
+    filepath   = input$upload_excel$datapath,
+    sheet_name = input$sheet_choice,
+    col_map    = list(sec = "security", cmp = "cmp", holding = "holding"),
+    validate_against = NULL,
+    on_clear   = NULL,
+    on_valid_row = function(i, row, detected) {
+      n <- nrow(df())
+      for (j in 1:n) {
+        tab_sec <- tolower(trimws(gsub("\\s+", " ", df()$Security[j])))
+        if (tab_sec == row$normalized_sec) {
+          updateNumericInput(session, paste0("cmp", j),
+                             value = round(as.numeric(row[[detected[["cmp"]]]]), 2))
+          updateNumericInput(session, paste0("holding", j),
+                             value = round(as.numeric(row[[detected[["holding"]]]]), 2))
+        }
+      }
+    }
+  )
 })
     # CASH
     output$value <- renderText({
