@@ -264,43 +264,51 @@ portfolioServer <- function(id, shared) {
 
         # EXCEL UPLOAD
     observeEvent(input$upload_excel, {
-      req(input$upload_excel, df())
+  req(input$upload_excel, df())
   
-      tryCatch({
-        xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
+  tryCatch({
+    xl <- openxlsx::read.xlsx(input$upload_excel$datapath)
     
-    # Standardize column names
-        names(xl) <- tolower(trimws(names(xl)))
+    # Normalize column names — lowercase and remove extra spaces
+    names(xl) <- tolower(trimws(gsub("\\s+", " ", names(xl))))
     
-    # Check required columns exist
-        if (!all(c("security", "cmp", "current holdings") %in% names(xl))) {
-          showNotification("Excel must have Security, CMP and Current Holdings columns!", type = "error")
-          return()
-        }
+    message("Excel columns found: ", paste(names(xl), collapse = ", "))
     
-        n <- nrow(df())
+    # Flexible column detection
+    cmp_col     <- names(xl)[grepl("cmp", names(xl))][1]
+    holding_col <- names(xl)[grepl("holding", names(xl))][1]
+    sec_col     <- names(xl)[grepl("security", names(xl))][1]
     
-        for (i in 1:n) {
-          sec <- df()$Security[i]
-      
-      # Find matching row in excel
-          match_row <- xl[tolower(trimws(xl$security)) == tolower(trimws(sec)), ]
-      
-          if (nrow(match_row) > 0) {
-        # Security found — update CMP and Holdings
-            updateNumericInput(session, paste0("cmp", i),     value = match_row$cmp[1])
-            updateNumericInput(session, paste0("holding", i), value = match_row$`current holdings`[1])
-          }
-      # Security not found — leave blank (do nothing)
-        }
+    if (is.na(cmp_col) || is.na(holding_col) || is.na(sec_col)) {
+      showNotification(
+        paste("Could not find columns. Found:", paste(names(xl), collapse = ", ")),
+        type = "error"
+      )
+      return()
+    }
     
-        showNotification("Data uploaded successfully!", type = "message")
+    n <- nrow(df())
     
-      }, error = function(e) {
-        showNotification(paste("Upload error:", e$message), type = "error")
-      })
-    })
-
+    for (i in 1:n) {
+  sec <- df()$Security[i]
+  
+  match_row <- xl[
+    tolower(trimws(gsub("\\s+", " ", xl[[sec_col]]))) == 
+    tolower(trimws(gsub("\\s+", " ", sec))), 
+  ]
+  
+  if (nrow(match_row) > 0) {
+    updateNumericInput(session, paste0("cmp", i),     value = match_row[[cmp_col]][1])
+    updateNumericInput(session, paste0("holding", i), value = match_row[[holding_col]][1])
+  }
+}
+    
+    showNotification("Data uploaded successfully!", type = "message")
+    
+  }, error = function(e) {
+    showNotification(paste("Upload error:", e$message), type = "error")
+  })
+})
     # CASH
     output$value <- renderText({
       req(df())
