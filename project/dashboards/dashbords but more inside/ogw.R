@@ -160,7 +160,7 @@ portfolioServer <- function(id, shared) {
             req(input[[paste0("cmp", idx)]], input$amt)
             cmp <- input[[paste0("cmp", idx)]]
             alloc <- df()$allocation[idx]
-            if (cmp > 0) round((input$amt * alloc) / cmp, 2) else 0
+            if (cmp > 0) format(round((input$amt * alloc) / cmp, 2), big.mark = ",", scientific = FALSE) else 0
           })
           
           output[[paste0("holding_perc", idx)]] <- renderText({
